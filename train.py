@@ -7,22 +7,23 @@ from unet import UNet
 import random
 from PIL import Image
 import os
+from fss1000 import FSS1000
 
 
 use_cuda = torch.cuda.is_available()
 device = torch.device('cuda' if use_cuda else 'cpu')
-NUM_CLASSES = 21
+NUM_CLASSES = 1001 # 21 for VOC, 1001 for FSS1000
 LEARNING_RATE = 1e-3
 WEIGHT_DECAY = 1e-4
 EPOCHS = 100
-BATCH_SIZE = 8
+BATCH_SIZE = 2
 SAVE_MODEL_EVERY = 10
 
 checkpoint_dir = 'chkpt'
 if not os.path.exists(checkpoint_dir):
     os.mkdir(checkpoint_dir)
 
-dataset_type = 'voc'
+dataset_type = 'fss1000'
 plot_dir = f'{dataset_type}plots/'
 if not os.path.exists(plot_dir):
     os.mkdir(plot_dir)
@@ -99,8 +100,12 @@ def display_segmentation(dataset, model, img_path, device):
     model.to(device)
 
 if __name__ == '__main__':
-    train_data = VOCSegmentation('data/')
-    val_data = VOCSegmentation('data/', image_set='val',)
+    if dataset_type == 'voc':
+        train_data = VOCSegmentation('data/')
+        val_data = VOCSegmentation('data/', image_set='val',)
+    elif dataset_type == 'fss1000':
+        train_data = FSS1000('data/', h=256, w=256)
+        val_data = FSS1000('data', image_set='val', h=256, w=256)
 
     train_loader = DataLoader(train_data, batch_size=BATCH_SIZE, shuffle=True)
     val_loader = DataLoader(val_data, batch_size=BATCH_SIZE, shuffle=False)
@@ -108,7 +113,10 @@ if __name__ == '__main__':
     model = UNet(in_channels=3, num_classes=NUM_CLASSES)
 
     if resume_training:
-        model = torch.load(f'{checkpoint_dir}/voc.pt')
+        if dataset_type == 'voc':
+            model = torch.load(f'{checkpoint_dir}/voc.pt')
+        elif dataset_type == 'fss1000':
+            model = torch.load(f'{checkpoint_dir}/fss1000.pt')
 
     model.to(device)
 
@@ -136,7 +144,10 @@ if __name__ == '__main__':
         display_segmentation(val_data, model, f'{plot_dir}/epoch{epoch}-val-segmentation.png', device)
 
         if epoch % SAVE_MODEL_EVERY == 0:
-            torch.save(model, f'{checkpoint_dir}/voc-epoch{epoch}.pt')
+            if dataset_type == 'voc':
+                torch.save(model, f'{checkpoint_dir}/voc-epoch{epoch}.pt')
+            elif dataset_type == 'fss1000':
+                torch.save(model, f'{checkpoint_dir}/fss1000-epoch{epoch}.pt')
 
         plt.figure()
         plt.title('Train Losses')
@@ -156,5 +167,8 @@ if __name__ == '__main__':
 
         scheduler.step()
 
-    torch.save(model, f'{checkpoint_dir}/voc-completed.pt')
+    if dataset_type == 'voc':
+        torch.save(model, f'{checkpoint_dir}/voc-completed.pt')
+    elif dataset_type == 'fss1000':
+        torch.save(model, f'{checkpoint_dir}/fss1000-completed.pt')
     print(f'Train Complete')
