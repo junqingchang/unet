@@ -43,6 +43,7 @@ def calculate_accuracy(loader, model, device):
             total_intersect += intersect
             total_union += union
             
+    total_union[total_union == 0] = 1
     iou = total_intersect/total_union
     avg_iou = np.mean(iou)
     return avg_iou
