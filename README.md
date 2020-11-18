@@ -12,6 +12,7 @@ chkpt/
 data/
     VOCdevkit/
         ...
+fss1000plots/
 vocplots/
 
 .gitignore
@@ -20,7 +21,8 @@ fssaccuracy.py
 README.md
 train.py
 unet.py
-visualise.py
+visualisefss.py
+visualisevoc.py
 voc.py
 vocaccuracy.py
 ```
